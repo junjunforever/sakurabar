@@ -44,3 +44,5 @@ NEXT IMPROVEMENTS
 3. Food menu page
 4. Google Maps place link
 5. Social sharing image (og:image)
+
+GitHub write access verified from ChatGPT.
