@@ -1,0 +1,78 @@
+name: Finalize Sakura site images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/finalize-site-images.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Patch image sources and localized brand names
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          HERO = {
+              'index.html': ('SAKURA SAKE BAR & CAFE',
+                  '<div class="hero-media"><img src="/assets/interior-wide.webp" alt="Interior of Sakura Sake Bar & Cafe in Shin-Okubo, Tokyo" loading="eager"><img src="/assets/sake-shochu-lineup.webp" alt="Japanese sake and rare shochu lineup at Sakura Sake Bar & Cafe" loading="eager"><img src="/assets/juyondai-counter.webp" alt="Juyondai sake bottle at Sakura Sake Bar & Cafe" loading="eager"></div><div class="photo-credit">Real photos from Sakura Sake Bar & Cafe</div>'),
+              'ja/index.html': ('さくら日本酒バー&カフェ',
+                  '<div class="hero-media"><img src="/assets/interior-wide.webp" alt="新大久保のさくら日本酒バー&カフェ店内" loading="eager"><img src="/assets/sake-shochu-lineup.webp" alt="さくら日本酒バー&カフェの日本酒と希少焼酎" loading="eager"><img src="/assets/juyondai-counter.webp" alt="さくら日本酒バー&カフェの十四代" loading="eager"></div><div class="photo-credit">さくら日本酒バー&カフェ 実店舗の写真</div>'),
+              'ko/index.html': ('사쿠라 사케바 & 카페',
+                  '<div class="hero-media"><img src="/assets/interior-wide.webp" alt="신오쿠보 사쿠라 사케바 & 카페 내부" loading="eager"><img src="/assets/sake-shochu-lineup.webp" alt="사쿠라 사케바 & 카페의 사케와 희귀 쇼추" loading="eager"><img src="/assets/juyondai-counter.webp" alt="사쿠라 사케바 & 카페의 쥬욘다이 사케" loading="eager"></div><div class="photo-credit">사쿠라 사케바 & 카페 실제 매장 사진</div>'),
+          }
+
+          PHOTO_STRIP = {
+              'index.html': '<div class="photo-strip"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/3885f02c-bdd4-4554-bd8f-735e57ad3d0d.png?im_w=1200" alt="Dagashi snack selection at Sakura Sake Bar & Cafe"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/026e3481-9d9d-4693-bd46-e3e7b353f71c.jpeg?im_w=1200" alt="Three Takachiyo sake bottles"><img src="https://imgfp.hotp.jp/IMGH/57/60/P050815760/P050815760_480.jpg" alt="Selection of food at Sakura Sake Bar & Cafe"></div>',
+              'ja/index.html': '<div class="photo-strip"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/3885f02c-bdd4-4554-bd8f-735e57ad3d0d.png?im_w=1200" alt="さくら日本酒バー&カフェの駄菓子"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/026e3481-9d9d-4693-bd46-e3e7b353f71c.jpeg?im_w=1200" alt="たかちよの日本酒3本"><img src="https://imgfp.hotp.jp/IMGH/57/60/P050815760/P050815760_480.jpg" alt="さくら日本酒バー&カフェの料理"></div>',
+              'ko/index.html': '<div class="photo-strip"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/3885f02c-bdd4-4554-bd8f-735e57ad3d0d.png?im_w=1200" alt="사쿠라 사케바 & 카페의 다가시 스낵"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/026e3481-9d9d-4693-bd46-e3e7b353f71c.jpeg?im_w=1200" alt="타카치요 사케 3병"><img src="https://imgfp.hotp.jp/IMGH/57/60/P050815760/P050815760_480.jpg" alt="사쿠라 사케바 & 카페의 음식"></div>',
+          }
+
+          PAIRING = {
+              'index.html': '<div class="pairing-photo"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/d0ff8173-7073-415d-bc8a-5778353bb8f4.jpeg?im_w=1200" alt="Three sake bottles with food pairings at Sakura Sake Bar & Cafe"></div>',
+              'ja/index.html': '<div class="pairing-photo"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/d0ff8173-7073-415d-bc8a-5778353bb8f4.jpeg?im_w=1200" alt="さくら日本酒バー&カフェの日本酒3本と料理のペアリング"></div>',
+              'ko/index.html': '<div class="pairing-photo"><img src="https://a0.muscache.com/im/pictures/Mt/MtTemplate-6906653/original/d0ff8173-7073-415d-bc8a-5778353bb8f4.jpeg?im_w=1200" alt="사쿠라 사케바 & 카페의 사케 3병과 음식 페어링"></div>',
+          }
+
+          for file, (brand, hero) in HERO.items():
+              p = Path(file)
+              s = p.read_text(encoding='utf-8')
+              s = re.sub(r'<a class="brand" href="([^"]*)">.*?</a>', lambda m: f'<a class="brand" href="{m.group(1)}">{brand}</a>', s, count=1)
+              s = re.sub(r'<div class="hero-media">.*?</div><div class="photo-credit">.*?</div>', hero, s, count=1, flags=re.S)
+              s = re.sub(r'<div class="photo-strip">.*?</div>', PHOTO_STRIP[file], s, count=1, flags=re.S)
+              s = re.sub(r'<div class="pairing-photo"><img .*?</div>', PAIRING[file], s, count=1, flags=re.S)
+              p.write_text(s, encoding='utf-8')
+
+          css = Path('style.css')
+          s = css.read_text(encoding='utf-8')
+          s = re.sub(r'\.brand\{[^}]*\}\.brand::after\{[^}]*\}html\[lang="ja"\] \.brand::after\{[^}]*\}html\[lang="ko"\] \.brand::after\{[^}]*\}', '.brand{font-weight:800;letter-spacing:.08em;text-decoration:none}', s)
+          s = re.sub(r'\.hero-media img:nth-child\(1\)\{content:url\([^}]+\}\}', '', s)
+          s = re.sub(r'\.hero-media img:nth-child\(2\)\{content:url\([^}]+\}\}', '', s)
+          s = re.sub(r'\.hero-media img:nth-child\(3\)\{content:url\([^}]+\}\}', '', s)
+          s = re.sub(r'\.photo-strip img:nth-child\(1\)\{content:url\([^}]+\}\}', '', s)
+          s = re.sub(r'\.photo-strip img:nth-child\(2\)\{content:url\([^}]+\}\}', '', s)
+          s = re.sub(r'\.photo-strip img:nth-child\(3\)\{content:url\([^}]+\}\}', '', s)
+          s = re.sub(r';content:url\([^;]+\)', '', s)
+          s = s.replace('@media(max-width:520px){.brand::after{font-size:12px}', '@media(max-width:520px){.brand{font-size:12px}')
+          css.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Commit cleanup
+        run: |
+          git config user.name "Sakura Site Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add index.html ja/index.html ko/index.html style.css
+          if git diff --cached --quiet; then
+            echo "No changes needed"
+          else
+            git commit -m "Use real image srcs and localized Sakura Sake Bar branding [skip ci]"
+            git push
+          fi
